@@ -127,7 +127,6 @@ while True:
                 exit()
 
             else:
-                
                 print("Wrong option")
     else:
         print("User not found")
