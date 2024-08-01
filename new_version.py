@@ -3,54 +3,55 @@
 
 import pickle
 import hashlib
+from os import system
+clear = lambda :system("cls")
+
 class Manage:
 
     def __init__(self) -> None:
-        with open('data.pkl', 'rb') as inp:
+        with open('user_data.pkl', 'rb') as inp:
             data = pickle.load(inp)
         inp.close()
         self.users_list = data
         
 
-
     def save(self):
-        with open('data.pkl', 'wb') as otp:
+        with open('user_data.pkl', 'wb') as otp:
             pickle.dump(self.users_list , otp)
 
-    def creat_hash(self,password):
+
+    @staticmethod
+    def __creat_hash(password):
         enc = password.encode()
         sha256 = hashlib.sha256(enc)
         string_hash = sha256.hexdigest()
         return string_hash
     
-    def admin_check(self ,user):
-        if user.email == "admin" and user.password == self.creat_hash("1234"):
-            return True
-        return False
 
     def add_new_member(self,email,password):
         self.users_list.append(User(email ,password))
 
-    def change_password(self ,user ,new_password):
-
-        for idx , person in enumerate(self.users_list):
-            if person == user:
-                changing_user = self.users_list.pop(idx)
-                changing_user.password = self.creat_hash(new_password)
-                self.users_list.append(changing_user)
 
     def validation(self ,email ,password) -> bool:
+        hashword = self.__creat_hash(password)
         for user in self.users_list:
-            if user.email == email and user.password == self.creat_hash(password):
+            if user.get_email() == email and user.get_password() == hashword:
                 return user
         return False
     
-    def send_email(self ,sender_email ,reciver_email ,text):
-        self.find_user(reciver_email).inbox.append(f"{sender_email} : {text}")
 
-    def find_user(self, email):
+    def send_email(self ,sender ,reciver_email ,text):
+        reciver = self.__find_user(reciver_email)
+        if reciver == False:
+            print("email not found")
+            return
+        reciver.get_inbox().append(f"{sender.get_email()} : {text}")
+        print("sent successfully")
+
+
+    def __find_user(self, email):
         for user in self.users_list:
-            if user.email == email:
+            if user.get_email() == email:
                 return user
         return False
 
@@ -58,19 +59,46 @@ class Manage:
 class User:
 
     def __init__(self ,email ,password ) -> None:
-        self.email = email
-        self.password = self.creat_hash(password)
-        self.inbox = []
+        self.__email = email
+        self.__password = self.__creat_hash(password)
+        self.__inbox = []
 
-    def creat_hash(self,password):
+
+    def get_email(self):
+        return self.__email
+
+    def get_password(self):
+        return self.__password
+
+    def get_inbox(self):
+        return self.__inbox
+
+
+    @staticmethod
+    def __creat_hash(password):
         enc = password.encode()
         sha256 = hashlib.sha256(enc)
         string_hash = sha256.hexdigest()
         return string_hash
 
+
     def inbox_print(self):
-        print(self.inbox)
+        if len(self.__inbox) == 0:
+            print("your inbox is empty")
+        else:
+            for mail in self.__inbox:
+                print(mail)
         
+
+    def admin_check(self):
+        if self.__email == "admin" and self.__password == self.__creat_hash("1234"):
+            return True
+        return False
+
+
+    def change_password(self ,new_password):
+        self.__password = self.__creat_hash(new_password)
+
 
 while True:
     print("welecome to email messenger")
@@ -78,9 +106,12 @@ while True:
     password = input("please enter your password : ")
     manage = Manage()
     current_user = manage.validation(email ,password)
+
     if current_user is not False:
-        admin_check = manage.admin_check(current_user)
+        admin_check = current_user.admin_check()
+
         while True:
+            clear()
             if admin_check :
                 print("press 'A' to add new member")
             try:
@@ -92,25 +123,29 @@ while True:
             except:
                 print("!!! entered option is wrong !!!")
                 continue
+
             if inp == "S":
-                target = manage.find_user(input("please enter reciver email : "))
-                if target == False:
-                    print("User not found")
-                    continue
+                clear()
+                target_email = input("please enter reciver email : ")
                 text = input("please write your massege : ")
-                manage.send_email(current_user.email ,target.email , text)
+                manage.send_email(current_user ,target_email , text)
+                input("press enter to continue")
                 
             elif inp == "I":
+                clear()
                 current_user.inbox_print()
+                input("press enter to continue")
 
             elif inp == "A" and admin_check :
-                member_email = input("please enter new members email")
-                member_password = input("please enter new members password")
+                clear()
+                member_email = input("please enter new members email : ")
+                member_password = input("please enter new members password : ")
                 manage.add_new_member(member_email ,member_password)
 
             elif inp == "C":
-                new_pass = input("please enter your new password")
-                manage.change_password(current_user , new_pass)
+                clear()
+                new_pass = input("please enter your new password : ")
+                current_user.change_password(new_pass)
             elif inp == "E":
                 manage.save()
                 exit()
@@ -118,6 +153,7 @@ while True:
                 print("wrong option")
     else:
         print("user not found")
+
 
 
 
